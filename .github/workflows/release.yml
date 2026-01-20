@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'  # Triggers on tags like v0.1.0, v1.2.3, etc.
+      - 'v*'  # Triggers on any tag starting with 'v' (v0.1.0, v1.2.3-alpha, v0.0.0-prerelease, etc.)
 
 jobs:
   build:
@@ -80,12 +80,22 @@ jobs:
         with:
           path: artifacts
 
+      - name: Check if prerelease
+        id: check_prerelease
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" == *-* ]]; then
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@v1
         with:
           files: artifacts/**/*
           generate_release_notes: true
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.check_prerelease.outputs.prerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
